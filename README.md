@@ -1,4 +1,4 @@
-# 🔍 Linux Cryptominer Detection Toolkit
+# 🔍 Sherlock - Linux Cryptominer Detection Toolkit
 
 A forensic toolkit for detecting cryptominer infections on Linux systems. Supports both **live box analysis** (running system) and **dead box analysis** (mounted forensic image or chroot). All detection signatures are managed through an external YAML file — no code changes needed to add new miners.
 
