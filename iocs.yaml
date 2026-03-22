@@ -1,0 +1,239 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# iocs.yaml  —  Cryptominer IOC Definitions
+# ─────────────────────────────────────────────────────────────────────────────
+# This file is the single source of truth for all detection signatures.
+# Edit this file (or use update_iocs.py) to add/remove indicators without
+# touching cryptominer_detect.py.
+#
+# Format rules:
+#   - All string values are matched case-insensitively.
+#   - filename_patterns entries are treated as Python regex patterns.
+#   - Pool indicators support partial substring matching (domain fragment,
+#     port string, or path fragment all work).
+#   - Add a comment after any entry to note the source / date added.
+#
+# Metadata block (informational only — not used by the detector):
+#   version      : Increment when you make changes.
+#   last_updated : ISO-8601 date of the last edit.
+#   maintainer   : Free-form contact string.
+# ─────────────────────────────────────────────────────────────────────────────
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2026-03-22"
+  maintainer: "security-team"
+
+# ── Heuristic thresholds ─────────────────────────────────────────────────────
+thresholds:
+  # Shannon entropy threshold for flagging packed/encrypted executables (0–8).
+  # Raise to reduce false positives; lower to catch more obfuscated samples.
+  entropy: 7.0
+
+  # CPU % at or above which a process is flagged as MEDIUM severity.
+  cpu_medium: 80.0
+
+  # CPU % at or above which a process is flagged as HIGH severity.
+  cpu_high: 95.0
+
+# ── Directories to scan for suspicious files ─────────────────────────────────
+scan_dirs:
+  - /tmp
+  - /var/tmp
+  - /dev/shm
+  - /usr/bin
+  - /usr/local/bin
+  - /bin
+  - /sbin
+  - /usr/sbin
+  - /usr/local/sbin
+  - /home
+  - /root
+  - /etc/cron.d
+  - /etc/cron.daily
+  - /etc/cron.hourly
+  - /etc/cron.weekly
+  - /etc/cron.monthly
+  - /var/spool/cron
+  - /opt
+  - /srv
+
+# ── Persistence locations to inspect ─────────────────────────────────────────
+persistence_paths:
+  - /etc/crontab
+  - /etc/rc.local
+  - /etc/profile
+  - /etc/profile.d
+  - /etc/bash.bashrc
+  - /etc/environment
+  - /etc/ld.so.preload      # LD_PRELOAD rootkit indicator — always flag if non-empty
+  - /etc/systemd/system
+  - /usr/lib/systemd/system
+  - /lib/systemd/system
+  - /var/spool/cron/crontabs
+  - /root/.bashrc
+  - /root/.bash_profile
+  - /root/.profile
+  - /root/.ssh/authorized_keys
+
+# ── Known miner process / binary names ───────────────────────────────────────
+# Matched against the basename of the running executable (live) or
+# any executable found during filesystem scan (deadbox).
+process_names:
+  # XMR / CryptoNight family
+  - xmrig               # most common open-source Monero miner
+  - xmrig-notls
+  - xmr-stak
+  - xmr-stak-rx
+  - xlarig              # fork targeting AEON / XLA
+  - moneroocean         # pool-branded miner variant
+  - cryptonight         # generic CryptoNight binary name
+
+  # CPU miners (generic)
+  - cpuminer
+  - cpuminer-multi
+  - minerd              # original cpuminer binary
+
+  # GPU / multi-algo miners
+  - ethminer
+  - phoenixminer
+  - t-rex               # NVIDIA GPU miner
+  - nbminer
+  - lolminer
+  - gminer
+  - nanominer
+  - srbminer
+  - teamredminer
+  - bfgminer
+  - cgminer
+  - sgminer
+  - claymore            # Claymore Dual Miner
+  - nheqminer           # Equihash / Zcash
+  - silentarmy          # Zcash GPU miner
+
+  # Disguised / obfuscated names observed in the wild
+  - superminer
+  - kworker_miner       # mimics Linux kworker thread
+  - kthreadd_miner      # mimics Linux kthreadd
+  - java_miner
+  - python_miner
+
+# ── Strings to search for inside file contents & process cmdlines ─────────────
+# Searched as plain substrings (case-insensitive) in the first 512 KB of a file
+# and in the full command-line of running processes.
+miner_strings:
+  # Binary / tool names
+  - xmrig
+  - xmr-stak
+  - monero
+  - cryptonight
+  - randomx             # RandomX PoW algorithm used by Monero
+
+  # Stratum protocol markers
+  - "stratum+tcp"
+  - "stratum+ssl"
+  - "stratum2+tcp"
+  - "stratum2+ssl"
+
+  # Pool FQDNs / fragments
+  - pool.minexmr
+  - supportxmr
+  - nanopool
+  - f2pool
+  - antpool
+  - nicehash
+  - ethermine
+  - mining.pool
+  - xmrpool
+  - hashvault
+  - moneroocean
+  - unmineable
+
+  # CLI flags unique to miners
+  - "donate.v2.xmrig"   # XMRig donation config key
+  - "--max-cpu-usage"
+  - "--cpu-priority"
+  - "--coin xmr"
+  - "--algo rx"
+
+  # Browser / JS miner SDKs
+  - cryptominer
+  - coinminer
+  - coinhive
+  - jsecoin
+  - deepminer
+  - coin-hive
+  - crypto-loot
+  - webminepool
+  - coinimp
+
+# ── Filename regex patterns ───────────────────────────────────────────────────
+# Each entry is compiled as a Python regex (re.IGNORECASE).
+# Use anchors (^ / $) where appropriate to avoid over-matching.
+filename_patterns:
+  - "xmrig"
+  - "cpuminer"
+  - "ethminer"
+  - "cryptominer"
+  - "minerd?$"           # matches 'miner' or 'minerd' at end of name
+  - "kworker_\\w+"       # e.g. kworker_2, kworker_cpu — disguised threads
+  - "\\.xmr$"            # files ending in .xmr
+  - "monero"
+  - "srbminer"
+  - "lolminer"
+  - "t-rex"
+  - "nbminer"
+  - "phoenixminer"
+  - "nanominer"
+
+# ── Mining pool indicators ────────────────────────────────────────────────────
+# Matched as substrings in network connection output and file contents.
+# Include domain fragments, IP prefixes, port strings, or URL patterns.
+pool_indicators:
+  # Monero pools
+  - minexmr.com
+  - supportxmr.com
+  - xmrpool.eu
+  - nanopool.org
+  - moneroocean.stream
+  - hashvault.pro
+  - xmrpool.net
+  - monerohash.com
+  - pool.hashvault.pro
+  - gulf.moneroocean
+  - rx.unmineable.com
+  - randomxmonero
+
+  # Multi-algo / NiceHash
+  - nicehash.com
+  - "nhmp.nicehash"      # NiceHash stratum endpoint fragment
+
+  # Ethereum / EVM pools
+  - ethermine.org
+  - 2miners.com
+  - f2pool.com
+  - antpool.com
+  - flexpool.io
+  - hiveon.net
+  - ezil.me
+
+  # Browser / JS miner domains
+  - coinhive.com
+  - coin-hive.com
+  - jsecoin.com
+  - deepminer
+  - crypto-loot.com
+  - webminepool.com
+  - coinimp.com
+  - authedmine.com
+
+  # Common stratum port strings (used in ss/netstat output matching)
+  - ":3333"              # standard Monero stratum
+  - ":4444"              # Ethereum stratum
+  - ":5555"
+  - ":7777"
+  - ":14433"             # XMRig TLS stratum
+  - ":45700"
+  - ":13333"
+  - ":80/stratum"
+  - "stratum+tcp"        # protocol scheme in URLs / cmdlines
+  - "stratum+ssl"
